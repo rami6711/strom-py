@@ -1,6 +1,7 @@
 # Strom HW class
 
-from machine import Pin, PWM, ADC, I2C, SoftI2C
+from machine import Pin, PWM, ADC, I2C
+from micropython import const
 from neopixel import NeoPixel
 import time
 
@@ -13,6 +14,12 @@ from fb_plus import fbadd
 from hdc1080 import HDC1080
 from veml7700 import VEML7700
 from ina226 import INA226
+
+BTN_IDLE = const(0)
+BTN_SHORT = const(1)
+BTN_LONG = const(2)
+TIME_SHORT = const(100)
+TIME_LONG = const(1000)
 
 def bmp_to_oled(r,g,b):
     ''' convert bmp color to oled color for BMPReader '''
@@ -29,6 +36,11 @@ class STROM():
         # Pin[5] - Input, button SW2
         self.sw1 = Pin(21, Pin.IN, Pin.PULL_UP)
         self.sw2 = Pin(5, Pin.IN, Pin.PULL_UP)
+        self.sw1.irq(trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING, handler=self.button_handler)
+        self.sw2.irq(trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING, handler=self.button_handler)
+        self.sw_time = time.ticks_ms()
+        self.sw1_state = BTN_IDLE
+        self.sw2_state = BTN_IDLE
 
         # Pin[0] - Analog input, ambient light
         # ATTN_0DB    ~ 100mV - 950mV
@@ -70,12 +82,16 @@ class STROM():
         self.start_up()
 
     def start_up(self):
+        # blue LED init
+        self.set_bled(0x10)
+        self.bled_toggle()
+
         # Enable 5V for WS2812
         self.v5en.value(1)
 
         # Scan I2C bus
         i2c_devs = self.i2c.scan()
-        
+
         if 0x3C in i2c_devs:
             self.oled_width = 128
             self.oled_height = 64
@@ -91,12 +107,12 @@ class STROM():
             self.veml = VEML7700(i2c=self.i2c, it=400, gain=1/8)
         else:
             raise OSError('Error: VEML7700 not found')
-        
+
         if 0x40 in i2c_devs:
             self.hdc = HDC1080(self.i2c)
         else:
             raise OSError('Error: HDC1080 not found')
-        
+
         if 0x45 in i2c_devs:
             self.ina = INA226(self.i2c, 0x45)
             self.ina.set_config(0x4B27)
@@ -106,7 +122,7 @@ class STROM():
             # time.sleep_ms(600)
         else:
             raise OSError('Error: INA226 not found')
-    
+
     def set_bled(self, value):
         # True: ON, False: OFF
         if type(value) == bool:
@@ -121,4 +137,40 @@ class STROM():
             if value > 255:
                 value = 255
             value = (255 - value) * 0x101
+        if (value != 2**16-1):
+            self.bled_setup = value
+        self.bled_value = value
         self.blue_led.duty_u16(value)
+
+    def bled_toggle(self):
+        if self.bled_value == 2**16-1:
+            # Off -> On
+            self.bled_value = self.bled_setup
+            self.blue_led.duty_u16(self.bled_setup)
+        else:
+            # On -> Off
+            self.bled_value = 2**16-1
+            self.blue_led.duty_u16(2**16-1)
+
+    def button_handler(self, pin):
+        if pin.value() == 0:
+            # pressed
+            self.sw_time = time.ticks_ms()
+        else:
+            # released
+            new_state = BTN_IDLE
+            if (time.ticks_ms() - self.sw_time) > TIME_LONG:
+                new_state = BTN_LONG
+            elif (time.ticks_ms() - self.sw_time) > TIME_SHORT:
+                new_state = BTN_SHORT
+            
+            if pin == self.sw1:
+                self.sw1_state = new_state
+            elif pin == self.sw2:
+                self.sw2_state = new_state
+
+    def get_buttons(self):
+        retval = (self.sw1_state, self.sw2_state)
+        self.sw1_state = BTN_IDLE
+        self.sw2_state = BTN_IDLE
+        return retval

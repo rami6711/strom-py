@@ -4,6 +4,7 @@ from strom import STROM
 from strom import bmp_to_oled
 from bmp_rd import BMPReader
 import time
+import machine
 
 print("start up")
 hw = STROM()
@@ -41,11 +42,14 @@ def demo():
     hw.oled.show()
     
     # Set minimal intensity for all LEDs
+    print('Press button to finish')
     for i in range(hw.np.__len__()):
-       hw.np[i] = (5, 0, 0)
-       time.sleep_ms(100)
-       hw.np.write()
-       print('.', end='')
+        if hw.get_buttons() != (0, 0):
+            break
+        hw.np[i] = (5, 0, 0)
+        time.sleep_ms(100)
+        hw.np.write()
+        print('.', end='')
     print('')
 
     print('ADC value: ' + str(hw.ambient.read_uv()/1000) + 'mV')
@@ -63,10 +67,6 @@ def demo():
     hw.set_bled(16)
 
 # Main
-print('Press SW2 to skip demo')
-if hw.sw2.value() == 1:
-    demo()
-else:
-    print('Exit to REPL')
+demo()
 
 
