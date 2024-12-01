@@ -53,6 +53,7 @@ class STROM():
         # Pin[1] - Neopixel Output, 37 x WS2812
         # 2+4+5+5+7+7+7 pixels
         self.np = NeoPixel(Pin(1, Pin.OUT), 37)
+        # self.np = NeoPixel(Pin(1, Pin.OUT), 16*32)
 
         # Pin[2] - GPIO2, free pad
         # Pin[3] - GPIO3, free pad
@@ -78,7 +79,9 @@ class STROM():
 
         # Pin[20] - Input, Alert from INA226 and TPS25200
         self.alert = Pin(20, Pin.IN, Pin.PULL_UP)
+        self.alert.irq(trigger=Pin.IRQ_FALLING, handler=self.alert_handler)
 
+        # init
         self.start_up()
 
     def start_up(self):
@@ -163,7 +166,7 @@ class STROM():
                 new_state = BTN_LONG
             elif (time.ticks_ms() - self.sw_time) > TIME_SHORT:
                 new_state = BTN_SHORT
-            
+            # store result
             if pin == self.sw1:
                 self.sw1_state = new_state
             elif pin == self.sw2:
@@ -174,3 +177,8 @@ class STROM():
         self.sw1_state = BTN_IDLE
         self.sw2_state = BTN_IDLE
         return retval
+
+    def alert_handler(self, pin):
+        if pin.value() == 0: 
+            self.v5en.value(0)
+            print('>> Alert')

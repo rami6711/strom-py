@@ -79,9 +79,10 @@ def round_up_125(value):
 def calib_reg():
     max_expected_current = float(input('Please input maximum expected current in Amps: '))
     shunt_resistance = 0.001 * float(input('Please input shunt resistance in miliOhms: '))
+    print('    Maximum allowed current = {:.2f}A'.format(0.08192/shunt_resistance))
     v_max = max_expected_current * shunt_resistance
-    if v_max > 0.32768:
-        raise ValueError('Shunt resistance too high: {}'.format(v_max))
+    if v_max > 0.0819:
+        raise ValueError('Shunt resistance too high: {:.3f}V'.format(v_max))
     current_lsb_uA = 1e6 * max_expected_current / 32768
     print('    Calculated Current_LSB: {} uA/bit'.format(current_lsb_uA))
     current_lsb_uA = round_up_125(current_lsb_uA)

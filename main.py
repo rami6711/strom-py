@@ -40,17 +40,27 @@ def demo():
     hw.fb.putText32('ABCDEFGH',48,42,1)
 
     hw.oled.show()
+
+    # alert on INA226 (0.3A @ 25mOhm)
+    hw.ina.set_over_current(0.3, 0.025)
     
     # Set minimal intensity for all LEDs
     print('Press button to finish')
+    print('ID I[A] U[V] P[W]')
+    rgb = [50, 10, 0]
     for i in range(hw.np.__len__()):
         if hw.get_buttons() != (0, 0):
             break
-        hw.np[i] = (5, 0, 0)
-        time.sleep_ms(100)
+        # hw.np[i] = (40, 40, 40)
+        hw.np[i] = rgb
+        rgb
+        time.sleep_ms(600)
+        # print(i)
+        print(i, hw.ina.current, hw.ina.bus_voltage, hw.ina.power)
         hw.np.write()
-        print('.', end='')
-    print('')
+        # print('.', end='')
+    # print('')
+    time.sleep_ms(600)
 
     print('ADC value: ' + str(hw.ambient.read_uv()/1000) + 'mV')
     print('Ambient light: ' + str(hw.veml.read_lux()))

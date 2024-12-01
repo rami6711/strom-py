@@ -109,6 +109,14 @@ _REG_CALIBRATION = const(0x05)
 
 # MASK/ENABLE REGISTER (R/W)
 _REG_MASKENABLE = const(0x06)
+_MASKENABLE_DEFAULT = const(0x0000)
+_MASKENABLE_ALERT_LATCH = const(0x0001)
+_MASKENABLE_MATH_OVF = const(1 << 2)
+_MASKENABLE_POWER_OVER = const(1 << 11)
+_MASKENABLE_BUS_UNDER = const(1 << 12)
+_MASKENABLE_BUS_OVER = const(1 << 13)
+_MASKENABLE_SHUNT_UNDER = const(1 << 14)
+_MASKENABLE_SHUNT_OVER = const(1 << 15)
 
 # ALERT LIMIT REGISTER (R/W)
 _REG_ALERTLIMIT = const(0x07)
@@ -127,12 +135,18 @@ def _to_signed(num):
         num -= 0x10000
     return num
 
+def _limit_s16(num):
+    if num > 32767:
+        num = 32767
+    if num < -32768:
+        num = -32768
+    return num
 
 class INA226:
     """Driver for the INA226 current sensor"""
     def __init__(self, i2c_device, addr=0x40):
-        """Configure the INA226 to measure with a resistance of 0.1 Ohm up to 36V
-        and 2A of current. Counter overflow occurs at about 3.2A.
+        """Configure the INA226 to measure with a resistance of 0.01 Ohm up to 36V
+        and 3.6A of current. Counter overflow occurs at about 8A.
         """
         self.i2c_device = i2c_device
         self.i2c_addr = addr
@@ -147,8 +161,8 @@ class INA226:
         self._power_lsb = 0
 
         # Set chip to known config values to start
-        self.set_calibration(512)
-        self.set_current_lsb(.0001)
+        self.set_calibration(2560)
+        self.set_current_lsb(.0002)
         self.set_config(_CONFIG_DEFAULT)
 
     def __repr__(self) -> str:
@@ -171,7 +185,7 @@ class INA226:
 
     @property
     def shunt_voltage(self):
-        """The shunt voltage (between V+ and V-) in Volts (so +-.327V)"""
+        """The shunt voltage (between V+ and V-) in Volts (so +-81.92mV)"""
         value = _to_signed(self._read_register(_REG_SHUNTVOLTAGE))
         # The least signficant bit is 2.5uV
         return value * 2.5e-6
@@ -214,3 +228,28 @@ class INA226:
 
     def set_config(self, config_value: int):
         self._write_register(_REG_CONFIG, config_value)
+
+    def disable_alerts(self):
+        self._write_register(_REG_MASKENABLE, _MASKENABLE_DEFAULT)
+
+    def set_under_current(self, i_min: float, r_shunt: float):
+        # vshunt_min = i_min * r_shunt
+        alert_reg = _limit_s16(int(i_min * r_shunt / 2.5e-6))
+        self._write_register(_REG_ALERTLIMIT, alert_reg)
+        self._write_register(_REG_MASKENABLE, _MASKENABLE_SHUNT_UNDER)
+
+    def set_over_current(self, i_max: float, r_shunt: float):
+        # vshunt_max = i_max * r_shunt
+        alert_reg = _limit_s16(int(i_max * r_shunt / 2.5e-6))
+        self._write_register(_REG_ALERTLIMIT, alert_reg)
+        self._write_register(_REG_MASKENABLE, _MASKENABLE_SHUNT_OVER)
+
+    def set_under_voltage(self, vbus_min: float):
+        alert_reg = _limit_s16(int(vbus_min / 1.25e-3))
+        self._write_register(_REG_ALERTLIMIT, alert_reg)
+        self._write_register(_REG_MASKENABLE, _MASKENABLE_BUS_UNDER)
+    
+    def set_over_voltage(self, vbus_max: float):
+        alert_reg = _limit_s16(int(vbus_max / 1.25e-3))
+        self._write_register(_REG_ALERTLIMIT, alert_reg)
+        self._write_register(_REG_MASKENABLE, _MASKENABLE_BUS_OVER)
