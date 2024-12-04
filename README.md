@@ -4,6 +4,8 @@
 - [Strom schematic](doc/strom_sch.pdf)
 - datasheet to [ESP32-C3 SuperMini](doc/ESP32-C3_SuperMini.pdf)
 
+![top_side](doc/hw_mb_top.jpg)
+
 | Pin | Connection |
 |-----|------------|
 |  0  | Analog input, ambient light from photo-resistor |
