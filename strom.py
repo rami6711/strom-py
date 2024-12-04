@@ -66,8 +66,8 @@ class STROM():
         # Pin[7] - SCL, I2C clock
         self.i2c = I2C(0, scl=Pin(7), sda=Pin(6), freq=100000)
 
-        # Pin[8] - PWM output, blue LED
-        self.blue_led = PWM(Pin(8), freq=1000, duty_u16=2**16-1)
+        # Pin[8] - PWM output, blue LED on module
+        self.led = PWM(Pin(8), freq=1000, duty_u16=2**16-1)
 
         # Pin[9] - NC, Boot button
         self.boot = Pin(9, Pin.IN, Pin.PULL_UP)
@@ -104,17 +104,20 @@ class STROM():
             self.fb = fbadd(self.oled.get_fb())
             self.oled.show()
         else:
-            raise OSError('Error: OLED display not found')
+            print('Error: OLED display not found')
+            # raise OSError('Error: OLED display not found')
 
         if 0x10 in i2c_devs:
             self.veml = VEML7700(i2c=self.i2c, it=400, gain=1/8)
         else:
-            raise OSError('Error: VEML7700 not found')
+            print('Error: VEML7700 not found')
+            # raise OSError('Error: VEML7700 not found')
 
         if 0x40 in i2c_devs:
             self.hdc = HDC1080(self.i2c)
         else:
-            raise OSError('Error: HDC1080 not found')
+            print('Error: HDC1080 not found')
+            # raise OSError('Error: HDC1080 not found')
 
         if 0x45 in i2c_devs:
             self.ina = INA226(self.i2c, 0x45)
@@ -124,7 +127,8 @@ class STROM():
             # wait for first sample (Ttotal = 563.2ms)
             # time.sleep_ms(600)
         else:
-            raise OSError('Error: INA226 not found')
+            print('Error: INA226 not found')
+            # raise OSError('Error: INA226 not found')
 
     def set_bled(self, value):
         # True: ON, False: OFF
@@ -143,17 +147,17 @@ class STROM():
         if (value != 2**16-1):
             self.bled_setup = value
         self.bled_value = value
-        self.blue_led.duty_u16(value)
+        self.led.duty_u16(value)
 
     def bled_toggle(self):
         if self.bled_value == 2**16-1:
             # Off -> On
             self.bled_value = self.bled_setup
-            self.blue_led.duty_u16(self.bled_setup)
+            self.led.duty_u16(self.bled_setup)
         else:
             # On -> Off
             self.bled_value = 2**16-1
-            self.blue_led.duty_u16(2**16-1)
+            self.led.duty_u16(2**16-1)
 
     def button_handler(self, pin):
         if pin.value() == 0:
