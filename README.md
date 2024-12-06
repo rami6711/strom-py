@@ -8,6 +8,8 @@ buttons and a small OLED display.
 
 ![strom](doc/strom.jpg)
 
+[Manual](doc/manual.md) is only for Slovak guys. :smiley:
+
 ## HW notes
 - [Strom schematic](doc/strom_sch.pdf)
 - datasheet to [ESP32-C3 SuperMini](doc/ESP32-C3_SuperMini.pdf)

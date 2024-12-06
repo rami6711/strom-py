@@ -2,6 +2,14 @@
 
 Manual je len po Slovensky.
 
+Este taka poznamka k tym stohovatelnym konektorm:
+- tie v balicku su od Cinana a tak kvalita je trochu slabsia, ked sa stromcek zaknise, tak stracaju LED-ky stavu a zhasnu.
+- existuju lepsie konektory, ale tie by som musel skor objednat a to sa uz nestihalo:
+    - [Fischer Elektronik BL9](https://www.fischerelektronik.de/web_fischer/en_GB/connectors/G02/Female%20headers/VA/BL92/index.xhtml)
+    - [Fischer Elektronik BL13](https://www.fischerelektronik.de/web_fischer/en_GB/connectors/G02/Female%20headers/VA/BL132/index.xhtml)
+    - [Samtec ESQ-102-14-G-S](https://www.samtec.com/products/esq-102-14-g-s)
+Mozno by stalo za to jednotlive kruzky napajkovat na hrubsie droty ktore vojdu do konektora X2 na doske A. Strom sa nebude dat rozobrat, ale stale sa da odpojit od zakladovej dosky.
+
 ## Oznacenie PCB
 
 ![PCB](manual/pcb_marking.png)
